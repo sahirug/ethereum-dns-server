@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/sahirug/ethereum-dns/contractdeploy"
 	"github.com/sahirug/ethereum-dns/contractload"
 	"github.com/sahirug/ethereum-dns/dns"
@@ -8,19 +9,29 @@ import (
 )
 
 func main() {
+
+	// flags
+	networkType := flag.String("network", "ganache", "the network type")
+
+	flag.Parse()
+
 	log.Println("============================================================== STARTING ETHEREUM DNS ==============================================================")
 	log.Println("================================================= Author: Sahiru Gunawardene <sahirug@gmail.com> ==================================================")
-	//log.Println("=========================================================== Status: Deploying Contract ============================================================")
+	if *networkType == "ganache" {
+		log.Println("Using Ganache Test Network")
+	} else if *networkType == "private" {
+		log.Println("Using private Ethereum network")
+	} else {
+		log.Fatal("Unknown network type. Exiting...")
+	}
 	log.Println("Deploying contract....")
-	//err := errors.New("fuck")
-	//log.Fatalf("Error occurred while deploying contract: %s", err)
-	hexAddr, txHash := contractdeploy.DeployContract()
+	hexAddr, txHash := contractdeploy.DeployContract(*networkType)
 	log.Printf("Contract deployed at %s", hexAddr)
 	log.Printf("Transaction hash hex: %s", txHash.Hex())
 
 	log.Println("Loading contract....")
 
-	instance := contractload.LoadContract(hexAddr)
+	instance := contractload.LoadContract(hexAddr, *networkType)
 
 	log.Println("Contract loaded!")
 

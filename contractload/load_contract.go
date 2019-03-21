@@ -7,9 +7,18 @@ import (
 	"github.com/sahirug/ethereum-dns/errorhandler"
 )
 
-func LoadContract(hexAddr string) *eddns.Eddns {
-	client, err := ethclient.Dial("http://localhost:7545") // ganache
-	//client, err := ethclient.Dial("http://localhost:8545") // docker
+func LoadContract(hexAddr string, networkType string) *eddns.Eddns {
+
+	var rawurl string
+
+	if networkType == "ganache" {
+		rawurl = "http://localhost:7545"
+	} else {
+		rawurl = "http://localhost:8545"
+	}
+
+	client, err := ethclient.Dial(rawurl)
+
 	if err != nil {
 		errorhandler.HandleErr(err, 7)
 	}
