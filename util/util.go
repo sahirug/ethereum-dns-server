@@ -5,7 +5,7 @@ import (
 	"regexp"
 )
 
-func ConvertByteArrToString(data [][15]byte) []string {
+func ConvertByteArrToString(data [][32]byte) []string {
 	var arr []string;
 	for i := 0; i < len(data); i++ {
 		addr := string(data[i][:])
@@ -18,7 +18,7 @@ func ConvertByteArrToString(data [][15]byte) []string {
 }
 
 func clean(s string) string {
-	reg, err := regexp.Compile("[^a-zA-Z0-9.]+")
+	reg, err := regexp.Compile("[^a-zA-Z0-9.:]+")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -14,13 +14,14 @@ import (
 )
 
 func DeployContract() (string, common.Hash) {
-	client, err := ethclient.Dial("http://localhost:7545")
+	client, err := ethclient.Dial("http://localhost:7545") // ganache
+	//client, err := ethclient.Dial("http://localhost:8545") // docker
 	if err != nil {
 		errorhandler.HandleErr(err, 1)
 	}
 
 	//privateKey, err := crypto.HexToECDSA("bc5b578e0dcb2dbf98dd6e5fe62cb5a28b84a55e15fc112d4ca88e1f62bd7c35") // docker
-	privateKey, err := crypto.HexToECDSA("a8ecc1d94b93080a347a994a35b8598ebe73eea21073739af847b7580230539a") //truffle
+	privateKey, err := crypto.HexToECDSA("a8ecc1d94b93080a347a994a35b8598ebe73eea21073739af847b7580230539a") //ganache
 	if err != nil {
 		errorhandler.HandleErr(err, 2)
 	}

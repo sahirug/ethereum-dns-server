@@ -8,7 +8,8 @@ import (
 )
 
 func LoadContract(hexAddr string) *eddns.Eddns {
-	client, err := ethclient.Dial("http://localhost:7545")
+	client, err := ethclient.Dial("http://localhost:7545") // ganache
+	//client, err := ethclient.Dial("http://localhost:8545") // docker
 	if err != nil {
 		errorhandler.HandleErr(err, 7)
 	}

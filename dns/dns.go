@@ -39,7 +39,7 @@ func (s *DDNService) Listen(e *eddns.Eddns) {
 	}
 	defer s.conn.Close()
 
-	log.Println("Polling for DNS requests...")
+	log.Println("Waiting for DNS requests...")
 	for true {
 		buf := make([]byte, packetLen)
 		_, addr, err := s.conn.ReadFromUDP(buf)
@@ -69,7 +69,8 @@ func (s *DDNService) Listen(e *eddns.Eddns) {
 }
 
 func (s *DDNService) Query(packet Packet, contract *eddns.Eddns) {
-	if packet.message.Questions[0].Type != dnsmessage.TypePTR {
+	if packet.message.Questions[0].Type == dnsmessage.TypeA || packet.message.Questions[0].Type == dnsmessage.TypeAAAA {
+		log.Printf("Message type: %s", packet.message.Questions[0].Type.String())
 		if packet.message.Header.Response {
 			// do stuff
 		}
@@ -80,17 +81,23 @@ func (s *DDNService) Query(packet Packet, contract *eddns.Eddns) {
 		log.Printf("Domain is %s tld is %s", domain, tld1)
 
 		var tld [12]byte
+		var rType [32]byte
 
 		copy(tld[:], []byte(tld1))
+		if packet.message.Questions[0].Type == dnsmessage.TypeA {
+			copy(rType[:], []byte("A"))
+		} else {
+			copy(rType[:], []byte("AAAA"))
+		}
 
-		ip, err := contract.GetIp(nil, []byte(domain), tld)
+		ip, err := contract.GetIp(nil, []byte(domain), tld, rType)
 
 		if err != nil {
 			log.Printf("Error when trying to resolve %s", fullQ)
+			log.Printf("Error is %v", err)
 		} else {
-			//log.Printf("IP: %s", string(ip[0][:]))
 			stringIps := util.ConvertByteArrToString(ip)
-			resources, err := convertToDNSResource(q, stringIps)
+			resources, err := convertToDNSResource(q, stringIps, packet.message.Questions[0].Type)
 			if err != nil {
 				log.Println("error when trying to create resource record")
 				log.Println(err)
@@ -116,7 +123,7 @@ func sendPacket(conn *net.UDPConn, message dnsmessage.Message, addr net.UDPAddr)
 	_ = t
 }
 
-func convertToDNSResource(domain string, data []string) ([]dnsmessage.Resource, error) {
+func convertToDNSResource(domain string, data []string, rType dnsmessage.Type) ([]dnsmessage.Resource, error) {
 	//log.Fatalf("Ips are %v", data)
 	rName, err := dnsmessage.NewName(domain)
 	none := []dnsmessage.Resource{}
@@ -128,18 +135,23 @@ func convertToDNSResource(domain string, data []string) ([]dnsmessage.Resource, 
 	}
 
 	for i := 0; i < len(data); i++ {
-		var rType dnsmessage.Type
+		//var rType dnsmessage.Type
 		var rBody dnsmessage.ResourceBody
 
 		stringIp := data[i]
 
-		rType = dnsmessage.TypeA
-		ip := net.ParseIP(strings.TrimSpace(stringIp))
+		//rType = dnsmessage.TypeA
+		ip := net.ParseIP(stringIp)
 		if ip == nil {
 			return none, errors.New("invalid ip")
 		}
-		rBody = &dnsmessage.AResource{A: [4]byte{ip[12], ip[13], ip[14], ip[15]}}
-
+		if rType == dnsmessage.TypeA {
+			rBody = &dnsmessage.AResource{A: [4]byte{ip[12], ip[13], ip[14], ip[15]}}
+		} else {
+			var ipV6 [16]byte
+			copy(ipV6[:], ip)
+			rBody = &dnsmessage.AAAAResource{AAAA: ipV6}
+		}
 		resource := dnsmessage.Resource{
 			Header: dnsmessage.ResourceHeader{
 				Name:rName,
@@ -151,7 +163,7 @@ func convertToDNSResource(domain string, data []string) ([]dnsmessage.Resource, 
 		}
 		resources = append(resources, resource)
 	}
-	log.Fatalf("resources are %v", resources)
+	//log.Fatalf("resources are %v", resources)
 	return resources, nil
 }
 
