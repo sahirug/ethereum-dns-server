@@ -12,7 +12,7 @@ func LoadContract(hexAddr string, networkType string) *eddns.Eddns {
 	var rawurl string
 
 	if networkType == "ganache" {
-		rawurl = "http://localhost:7545"
+		rawurl = "http://localhost:8545"
 	} else {
 		rawurl = "http://localhost:8545"
 	}

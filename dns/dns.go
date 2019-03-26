@@ -2,6 +2,7 @@ package dns
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/sahirug/ethereum-dns/contracts"
 	"github.com/sahirug/ethereum-dns/errorhandler"
 	"github.com/sahirug/ethereum-dns/util"
@@ -31,7 +32,7 @@ type Packet struct {
 	message dnsmessage.Message
 }
 
-func (s *DDNService) Listen(e *eddns.Eddns) {
+func (s *DDNService) Listen(e *eddns.Eddns, auth *bind.TransactOpts) {
 	var err error
 	s.conn, err = net.ListenUDP("udp", &net.UDPAddr{Port:udpPort})
 	if err != nil {
@@ -64,11 +65,11 @@ func (s *DDNService) Listen(e *eddns.Eddns) {
 			continue
 		}
 
-		s.Query(Packet{*addr, m}, e)
+		s.Query(Packet{*addr, m}, e, auth)
 	}
 }
 
-func (s *DDNService) Query(packet Packet, contract *eddns.Eddns) {
+func (s *DDNService) Query(packet Packet, contract *eddns.Eddns, auth *bind.TransactOpts) {
 	if packet.message.Questions[0].Type == dnsmessage.TypeA || packet.message.Questions[0].Type == dnsmessage.TypeAAAA {
 		log.Printf("Message type: %s", packet.message.Questions[0].Type.String())
 		if packet.message.Header.Response {
@@ -80,9 +81,11 @@ func (s *DDNService) Query(packet Packet, contract *eddns.Eddns) {
 		domain, tld1 := fullQ[0], fullQ[1]
 		log.Printf("Domain is %s tld is %s", domain, tld1)
 
+		var domainName [32]byte
 		var tld [12]byte
 		var rType [32]byte
 
+		copy(domainName[:], []byte(domain))
 		copy(tld[:], []byte(tld1))
 		if packet.message.Questions[0].Type == dnsmessage.TypeA {
 			copy(rType[:], []byte("A"))
@@ -90,7 +93,12 @@ func (s *DDNService) Query(packet Packet, contract *eddns.Eddns) {
 			copy(rType[:], []byte("AAAA"))
 		}
 
-		ip, err := contract.GetIp(nil, []byte(domain), tld, rType)
+		opts := bind.CallOpts{
+			Pending: true,
+			From: auth.From,
+		}
+
+		ip, err := contract.GetIp(&opts, domainName, tld, rType)
 
 		if err != nil {
 			log.Printf("Error when trying to resolve %s", fullQ)
@@ -172,9 +180,9 @@ func New() DDNService {
 	return DDNService{}
 }
 
-func Start(e *eddns.Eddns) *DDNService {
+func Start(e *eddns.Eddns, auth *bind.TransactOpts) *DDNService {
 	s := New()
-	s.Listen(e)
+	s.Listen(e, auth)
 
 	return &s
 }

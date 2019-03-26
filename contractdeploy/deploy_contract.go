@@ -13,13 +13,13 @@ import (
 	"math/big"
 )
 
-func DeployContract(networkType string) (string, common.Hash) {
+func DeployContract(networkType string) (string, common.Hash, *bind.TransactOpts) {
 
 	var url string
 	var hexKey string
 
 	if networkType == "ganache" {
-		url = "http://localhost:7545"
+		url = "http://localhost:8545"
 		hexKey = "a8ecc1d94b93080a347a994a35b8598ebe73eea21073739af847b7580230539a"
 	} else {
 		url = "http://localhost:8545"
@@ -32,7 +32,7 @@ func DeployContract(networkType string) (string, common.Hash) {
 		errorhandler.HandleErr(err, 1)
 	}
 
-	privateKey, err := crypto.HexToECDSA(hexKey) //ganache
+	privateKey, err := crypto.HexToECDSA(hexKey)
 
 	if err != nil {
 		errorhandler.HandleErr(err, 2)
@@ -74,7 +74,7 @@ func DeployContract(networkType string) (string, common.Hash) {
 	//fmt.Println(tx.Hash().Hex())
 
 	_ = instance
-	return address.Hex(), tx.Hash()
+	return address.Hex(), tx.Hash(), auth
 }
 
 //func handleError(err error, codeblock uint) {

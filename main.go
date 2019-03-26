@@ -11,7 +11,7 @@ import (
 func main() {
 
 	// flags
-	networkType := flag.String("network", "ganache", "the network type")
+	networkType := flag.String("network", "private", "the network type")
 
 	flag.Parse()
 
@@ -25,7 +25,7 @@ func main() {
 		log.Fatal("Unknown network type. Exiting...")
 	}
 	log.Println("Deploying contract....")
-	hexAddr, txHash := contractdeploy.DeployContract(*networkType)
+	hexAddr, txHash, auth := contractdeploy.DeployContract(*networkType)
 	log.Printf("Contract deployed at %s", hexAddr)
 	log.Printf("Transaction hash hex: %s", txHash.Hex())
 
@@ -35,7 +35,7 @@ func main() {
 
 	log.Println("Contract loaded!")
 
-	dns.Start(instance)
+	dns.Start(instance, auth)
 
 	//var tld [12]byte
 	//
